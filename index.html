@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="wasm_exec.js"></script>
+    <title>Go Wasm </title>
+</head>
+<body>
+    <h2>Web Assembly !</h2>
+    a:<input id="a" type="text"/><br/>
+    b:<input id="b" type="text"/><br/>
+    <button id="addBut">Add</button><br/>
+    <textarea id="out"></textarea>
+    <script>
+        function addEvt(){
+            let a = document.getElementById("a").value
+            let b = document.getElementById("b").value
+            const result = webAdd(parseInt(a),parseInt(b))
+            let out = document.getElementById("out");
+            out.innerText +=result+"\n\r";
+            document.getElementById("a").value=""
+            document.getElementById("b").value =""
+        }
+
+        (async()=>{
+            
+            document.getElementById("addBut").addEventListener('click',addEvt)
+            //console.log(a)
+            const go = new Go()
+            const app = await WebAssembly.instantiateStreaming(fetch("goapp.wasm"),go.importObject)
+            go.run(app.instance)
+        })();
+        
+
+    </script>
+</body>
+</html>
