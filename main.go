@@ -16,16 +16,18 @@ func additionWeb(this js.Value, args []js.Value) interface{} {
 }
 */
 
-func log(msg string, w *sync.WaitGroup) {
-	fmt.Println(msg)
-	w.Done()
-}
-
 func main() {
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go log("Line 1", &wg)
-	go log("Line 2", &wg)
+	go func() {
+		fmt.Println("Line 1")
+		wg.Done()
+	}()
+	go func() {
+		fmt.Println("Line 2")
+		wg.Done()
+	}()
+
 	fmt.Println("Line 3")
 	fmt.Println("End of Program")
 
