@@ -19,6 +19,7 @@ Data Structures
     - arrays
     - slices
     - maps
+    - byte
 
 Functions
     - variadic
@@ -51,10 +52,21 @@ Goroutines
     - Wait Groups
     - Mutexes and Locks
 
+
 Channels
     - Unbuffered
     - Buffered
+    
+    - Concurrency patterns
+        - Generator
+        - Service Handle
+        - Fan-in/Fan-out
+        - Done Channel
+        - Select/For Loop
+    
+
+JSON, XML and Glob Marshalling and Unmarshalling
 
 Web Clients And Servers
 
-JSON, XML and Glob Marshalling and Unmarshalling
+
