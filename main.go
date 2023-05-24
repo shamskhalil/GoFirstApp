@@ -1,105 +1,59 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 )
 
-type Person struct {
-	Id    int    `json:"id"`
-	FName string `json:"fName"`
-	LName string `json:"lName"`
-}
-
-func (p *Person) toJson() []byte {
-	js, _ := json.Marshal(p)
-	return js
-}
-
-func (p *Person) fromJson(personStr []byte) *Person {
-	newPerson := &Person{}
-	json.Unmarshal(personStr, newPerson)
-	return newPerson
-}
-
-var db = []Person{
-	{Id: 0, FName: "Khalil", LName: "Shams"},
-	{Id: 1, FName: "Aminu", LName: "Salis"},
-	{Id: 2, FName: "Kabiru", LName: "Garba"},
+type response struct {
+	code    int
+	abbr    string
+	err     error
+	elapsed string
 }
 
 func main() {
-	url := "http://localhost:3000/person"
-	go makeServer()
+	now := time.Now()
+	urls := map[string]string{
+		"google":    "https://google.com",
+		"facebook":  "https://facebook.com",
+		"tiktok":    "https://tiktok.com",
+		"instagram": "https://instagram.com",
+	}
+	fmt.Println(len(urls))
+	ch := make(chan response)
+	for abbr, url := range urls {
+		go func(u string, ab string) {
+			fetchChan(ch, u, ab)
+		}(url, abbr)
+	}
+	for i := 0; i < len(urls); i++ {
+		fmt.Println(<-ch)
+	}
+	fmt.Printf("Elsapsed: %v\n", time.Since(now))
+}
 
-	time.Sleep(5 * time.Second)
-	log.Println("Making get request ...")
+func fetchChan(ch chan response, url string, abbr string) {
+	now := time.Now()
 	res, err := http.Get(url)
-	checkErr(err)
-	js, err := ioutil.ReadAll(res.Body)
-	checkErr(err)
-
-	personObjects := []Person{}
-	json.Unmarshal(js, &personObjects)
-	fmt.Printf("%+v\n", personObjects)
-	res.Body.Close()
-	time.Sleep(1 * time.Hour)
-}
-
-func checkErr(err error) {
 	if err != nil {
-		log.Fatalf("%v\n", err)
+
+		ch <- response{code: 0, abbr: abbr, err: err, elapsed: fmt.Sprintf("%s\n", time.Since(now))}
+		fmt.Println(err)
+		close(ch)
+		return
 	}
+	ch <- response{code: res.StatusCode, abbr: abbr, err: err, elapsed: fmt.Sprintf("%s\n", time.Since(now))}
 }
 
-func makeServer() {
-	http.HandleFunc("/person", getPersonHandler)
-	http.HandleFunc("/person/", getOnePersonHandler)
-	log.Print("Server listening on port 3000 !")
-	if err := http.ListenAndServe(":3000", nil); err != nil {
-		log.Fatal("Error starting server! ", err)
+func fetch(url string) (int, error) {
+	fmt.Println("Making resquest ....")
+	res, err := http.Get(url)
+	if err != nil {
+		return 0, err
 	}
-}
-
-func getPersonHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		log.Println("GET REQ <<<")
-		fmt.Println(r.URL.Path)
-
-		response, err := json.Marshal(db)
-		checkErr(err)
-		w.Header().Add("Content-Type", "application/json")
-		w.Write(response)
-	} else {
-		//POST
-		log.Println("POST REQ <<<")
-		body, err := ioutil.ReadAll(r.Body)
-		checkErr(err)
-		defer r.Body.Close()
-		person := Person{}
-		newPerson := person.fromJson(body)
-		db = append(db, *newPerson)
-		w.Write([]byte("Person created!"))
-	}
-
-}
-
-func getOnePersonHandler(w http.ResponseWriter, r *http.Request) {
-
-	log.Println("GET REQ <<<")
-	fmt.Println(r.URL.Path)
-	chunks := strings.Split(r.URL.Path, "/")
-	id, err := strconv.Atoi(chunks[len(chunks)-1])
-	checkErr(err)
-	response, err := json.Marshal(db[id])
-	checkErr(err)
-	w.Header().Add("Content-Type", "application/json")
-	w.Write(response)
-
+	code := res.StatusCode
+	res.Body.Close()
+	return code, nil
 }
